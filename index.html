@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Konverter Log Transaksi Gethub</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 20px;
+            background-color: #f4f6f9;
+            color: #333;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        h2 {
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        textarea {
+            width: 100%;
+            height: 150px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-family: monospace;
+            margin-bottom: 15px;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .table-container {
+            margin-top: 25px;
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #2c3e50;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Konverter Log Transaksi</h2>
+    <p>Tempelkan log transaksi mentah di bawah ini:</p>
+    <textarea id="rawLog" placeholder="Tempel log mentah di sini... (pisahkan dengan TAB atau spasi ganda)"></textarea>
+    
+    <button onclick="processData()">Submit Data</button>
+
+    <div class="table-container">
+        <h3>Hasil Submit (Format Baru & Urutan Dibalik)</h3>
+        <table id="resultTable">
+            <thead>
+                <tr>
+                    <th>No</th>
+                    <th>Tanggal Terima</th>
+                    <th>User</th>
+                    <th>Jumlah</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td colspan="4" style="text-align: center; color: #888;">Belum ada data. Silakan tempel log dan klik Submit.</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+function processData() {
+    const rawText = document.getElementById('rawLog').value.trim();
+    if (!rawText) {
+        alert('Silakan tempelkan log transaksi terlebih dahulu!');
+        return;
+    }
+
+    // Memecah baris
+    const lines = rawText.split('\n');
+    let parsedRows = [];
+
+    lines.forEach(line => {
+        const trimmedLine = line.trim();
+        if (trimmedLine === "") return;
+
+        // Memisahkan berdasarkan TAB atau minimal 2 spasi berturut-turut
+        const columns = trimmedLine.split(/\t| {2,}/);
+
+        if (columns.length >= 7) {
+            parsedRows.push({
+                tanggal: columns[0] ? columns[0].trim() : "",
+                user: columns[1] ? columns[1].trim() : "",
+                jumlah: columns[5] ? columns[5].trim() : "" // Kolom Jumlah (index ke-5 dari format awal tanpa No)
+            });
+        }
+    });
+
+    if (parsedRows.length === 0) {
+        alert('Format log tidak dikenali atau tidak lengkap.');
+        return;
+    }
+
+    // MEMBALIK URUTAN: Akhir ke Pertama (Bawah ke Atas)
+    parsedRows.reverse();
+
+    // Merender ulang ke dalam Tabel HTML
+    const tbody = document.querySelector('#resultTable tbody');
+    tbody.innerHTML = "";
+
+    parsedRows.forEach((row, index) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${index + 1}</td>
+            <td>${row.tanggal}</td>
+            <td>${row.user}</td>
+            <td>${row.jumlah}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+</script>
+
+</body>
+</html>
