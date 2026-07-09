@@ -75,7 +75,7 @@
 <div class="container">
     <h2>Konverter Log Transaksi</h2>
     <p>Tempelkan log transaksi mentah di bawah ini:</p>
-    <textarea id="rawLog" placeholder="Tempel log mentah di sini... (pisahkan dengan TAB atau spasi ganda)"></textarea>
+    <textarea id="rawLog" placeholder="Tempel log mentah di sini... (Salin langsung dari spreadsheet)"></textarea>
     
     <button onclick="processData()">Submit Data</button>
 
@@ -107,7 +107,7 @@ function processData() {
         return;
     }
 
-    // Memecah baris
+    // Memecah baris log
     const lines = rawText.split('\n');
     let parsedRows = [];
 
@@ -115,27 +115,37 @@ function processData() {
         const trimmedLine = line.trim();
         if (trimmedLine === "") return;
 
-        // Memisahkan berdasarkan TAB atau minimal 2 spasi berturut-turut
-        const columns = trimmedLine.split(/\t| {2,}/);
+        // Memisahkan kolom berdasarkan karakter TAB (standar hasil copy dari spreadsheet)
+        const columns = trimmedLine.split('\t');
 
-        if (columns.length >= 7) {
+        // Memastikan jumlah kolom minimal sampai indeks ke-5 (Kolom F / Jumlah)
+        if (columns.length >= 6) {
+            // Menggabungkan Kolom A (Tanggal) dan Kolom B (Waktu)
+            const tanggalPenuh = `${columns[0].trim()} ${columns[1] ? columns[1].trim() : ""}`.trim();
+            
+            // Kolom C (UserID / Akun)
+            const userText = columns[2] ? columns[2].trim() : ""; 
+
+            // Kolom F (Total Uang Masuk / Kredit)
+            const jumlahText = columns[5] ? columns[5].trim() : "";
+
             parsedRows.push({
-                tanggal: columns[0] ? columns[0].trim() : "",
-                user: columns[1] ? columns[1].trim() : "",
-                jumlah: columns[5] ? columns[5].trim() : "" // Kolom Jumlah (index ke-5 dari format awal tanpa No)
+                tanggal: tanggalPenuh,
+                user: userText,
+                jumlah: jumlahText
             });
         }
     });
 
     if (parsedRows.length === 0) {
-        alert('Format log tidak dikenali atau tidak lengkap.');
+        alert('Format log tidak dikenali. Pastikan Anda menyalin data langsung dari tabel spreadsheet minimal kolom A sampai F.');
         return;
     }
 
-    // MEMBALIK URUTAN: Akhir ke Pertama (Bawah ke Atas)
+    // MEMBALIK URUTAN: Baris paling bawah di spreadsheet menjadi urutan pertama di tabel
     parsedRows.reverse();
 
-    // Merender ulang ke dalam Tabel HTML
+    // Merender ulang data ke dalam Tabel HTML
     const tbody = document.querySelector('#resultTable tbody');
     tbody.innerHTML = "";
 
