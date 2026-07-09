@@ -12,7 +12,7 @@
             color: #333;
         }
         .container {
-            max-width: 1000px;
+            max-width: 1100px;
             margin: 0 auto;
             background: #fff;
             padding: 25px;
@@ -35,7 +35,7 @@
             margin-bottom: 15px;
         }
         .btn-group {
-            margin-bottom: 15px;
+            margin-bottom: 20px;
         }
         button {
             border: none;
@@ -45,31 +45,28 @@
             cursor: pointer;
             transition: background 0.3s;
             margin-right: 5px;
+            font-weight: bold;
         }
-        .btn-submit {
-            background-color: #3498db;
-            color: white;
-        }
-        .btn-submit:hover {
-            background-color: #2980b9;
-        }
-        .btn-copy {
-            background-color: #2ecc71;
-            color: white;
-        }
-        .btn-copy:hover {
-            background-color: #27ae60;
-        }
-        .btn-reset {
-            background-color: #e74c3c;
-            color: white;
-        }
-        .btn-reset:hover {
-            background-color: #c0392b;
-        }
+        .btn-submit { background-color: #3498db; color: white; }
+        .btn-submit:hover { background-color: #2980b9; }
+        
+        .btn-copy-1 { background-color: #2ecc71; color: white; }
+        .btn-copy-1:hover { background-color: #27ae60; }
+
+        .btn-copy-2 { background-color: #27ae60; color: white; }
+        .btn-copy-2:hover { background-color: #1e7e34; }
+        
+        .btn-reset { background-color: #e74c3c; color: white; }
+        .btn-reset:hover { background-color: #c0392b; }
+        
         .table-container {
             margin-top: 25px;
             overflow-x: auto;
+        }
+        .tables-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
         }
         table {
             width: 100%;
@@ -78,8 +75,9 @@
         }
         th, td {
             border: 1px solid #ddd;
-            padding: 12px;
+            padding: 10px;
             text-align: left;
+            font-size: 14px;
         }
         th {
             background-color: #2c3e50;
@@ -87,6 +85,16 @@
         }
         tr:nth-child(even) {
             background-color: #f9f9f9;
+        }
+        .table-title {
+            font-weight: bold;
+            color: #2c3e50;
+            margin-top: 10px;
+            border-left: 4px solid #3498db;
+            padding-left: 8px;
+        }
+        @media (max-width: 768px) {
+            .tables-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -99,33 +107,60 @@
     
     <div class="btn-group">
         <button class="btn-submit" onclick="processData()">Submit Data</button>
-        <button class="btn-copy" onclick="copyResult()">Salin Hasil</button>
+        <button class="btn-copy-1" onclick="copyTable1()">Salin Tabel 1</button>
+        <button class="btn-copy-2" onclick="copyTable2()">Salin Tabel 2</button>
         <button class="btn-reset" onclick="resetAll()">Reset All</button>
     </div>
 
-    <div class="table-container">
-        <h3>Hasil Submit</h3>
-        <table id="resultTable">
-            <thead>
-                <tr>
-                    <th>No</th>
-                    <th>Tanggal Terima</th>
-                    <th>User</th>
-                    <th>Jumlah</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td id="emptyRow" colspan="4" style="text-align: center; color: #888;">Belum ada data. Silakan tempel log dan klik Submit.</td>
-                </tr>
-            </tbody>
-        </table>
+    <h3>Hasil Submit</h3>
+    
+    <div class="tables-grid">
+        <!-- TABEL 1 -->
+        <div class="table-container">
+            <div class="table-title">Tabel 1 (Format Awal)</div>
+            <table id="table1">
+                <thead>
+                    <tr>
+                        <th>No</th>
+                        <th>Tanggal Terima</th>
+                        <th>User</th>
+                        <th>Jumlah</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="4" style="text-align: center; color: #888;">Belum ada data.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- TABEL 2 -->
+        <div class="table-container">
+            <div class="table-title">Tabel 2 (Format Baru)</div>
+            <table id="table2">
+                <thead>
+                    <tr>
+                        <th>WAKTU</th>
+                        <th>Used ID</th>
+                        <th>Tujuan Bank</th>
+                        <th>kredit</th>
+                        <th>Jumlah</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="5" style="text-align: center; color: #888;">Belum ada data.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 
 <script>
-// Variabel global untuk menyimpan data hasil proses agar mudah disalin
-let currentParsedRows = [];
+let dataTabel1 = [];
+let dataTabel2 = [];
 
 function processData() {
     const rawText = document.getElementById('rawLog').value.trim();
@@ -144,13 +179,24 @@ function processData() {
         const columns = trimmedLine.split('\t');
 
         if (columns.length >= 6) {
-            const tanggalPenuh = `${columns[0].trim()} ${columns[1] ? columns[1].trim() : ""}`.trim();
+            // Mengambil jam saja dari kolom B (Waktu)
+            const jamSaja = columns[1] ? columns[1].trim() : "";
             const userText = columns[2] ? columns[2].trim() : ""; 
+            const bankText = columns[3] ? columns[3].trim() : "";
+            
+            // Menghapus tanda minus (-) pada kolom kredit (Kolom E / indeks 4)
+            let kreditText = columns[4] ? columns[4].trim() : "";
+            if (kreditText === "-") {
+                kreditText = "";
+            }
+
             const jumlahText = columns[5] ? columns[5].trim() : "";
 
             parsedRows.push({
-                tanggal: tanggalPenuh,
+                jam: jamSaja,
                 user: userText,
+                bank: bankText,
+                kredit: kreditText,
                 jumlah: jumlahText
             });
         }
@@ -161,57 +207,70 @@ function processData() {
         return;
     }
 
+    // Balik urutan data (Bawah ke Atas)
     parsedRows.reverse();
-    currentParsedRows = parsedRows; // Simpan ke variabel global
 
-    const tbody = document.querySelector('#resultTable tbody');
-    tbody.innerHTML = "";
+    // Simpan ke data global untuk fitur salin
+    dataTabel1 = parsedRows;
+    dataTabel2 = parsedRows;
 
-    parsedRows.forEach((row, index) => {
+    // Render TABEL 1
+    const tbody1 = document.querySelector('#table1 tbody');
+    tbody1.innerHTML = "";
+    dataTabel1.forEach((row, index) => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td>${index + 1}</td>
-            <td>${row.tanggal}</td>
+            <td>${row.jam}</td>
             <td>${row.user}</td>
             <td>${row.jumlah}</td>
         `;
-        tbody.appendChild(tr);
+        tbody1.appendChild(tr);
+    });
+
+    // Render TABEL 2
+    const tbody2 = document.querySelector('#table2 tbody');
+    tbody2.innerHTML = "";
+    dataTabel2.forEach(row => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${row.jam}</td>
+            <td>${row.user}</td>
+            <td>${row.bank}</td>
+            <td>${row.kredit}</td>
+            <td>${row.jumlah}</td>
+        `;
+        tbody2.appendChild(tr);
     });
 }
 
-// FUNGSI BARU: MENYALIN DATA HASIL KONVERSI KE CLIPBOARD
-function copyResult() {
-    if (currentParsedRows.length === 0) {
-        alert('Tidak ada data hasil konversi yang bisa disalin!');
-        return;
-    }
-
-    // Membuat format teks rapi pisah kolom Tab, baris Enter (agar siap di-paste kembali)
-    let textToCopy = "No\tTanggal Terima\tUser\tJumlah\n";
-    currentParsedRows.forEach((row, index) => {
-        textToCopy += `${index + 1}\t${row.tanggal}\t${row.user}\t${row.jumlah}\n`;
+// Fungsi Salin Tabel 1
+function copyTable1() {
+    if (dataTabel1.length === 0) { alert('Tidak ada data di Tabel 1!'); return; }
+    let text = "No\tTanggal Terima\tUser\tJumlah\n";
+    dataTabel1.forEach((row, index) => {
+        text += `${index + 1}\t${row.jam}\t${row.user}\t${row.jumlah}\n`;
     });
-
-    navigator.clipboard.writeText(textToCopy.trim())
-        .then(() => {
-            alert('Hasil sukses disalin ke clipboard!');
-        })
-        .catch(err => {
-            alert('Gagal menyalin teks: ', err);
-        });
+    navigator.clipboard.writeText(text.trim()).then(() => alert('Tabel 1 berhasil disalin!'));
 }
 
-// FUNGSI BARU: RESET SEMUA INPUT DAN TABEL HASIL
+// Fungsi Salin Tabel 2
+function copyTable2() {
+    if (dataTabel2.length === 0) { alert('Tidak ada data di Tabel 2!'); return; }
+    let text = "WAKTU\tUsed ID\tTujuan Bank\tkredit\tJumlah\n";
+    dataTabel2.forEach(row => {
+        text += `${row.jam}\t${row.user}\t${row.bank}\t${row.kredit}\t${row.jumlah}\n`;
+    });
+    navigator.clipboard.writeText(text.trim()).then(() => alert('Tabel 2 berhasil disalin!'));
+}
+
+// Fungsi Reset Semua
 function resetAll() {
     document.getElementById('rawLog').value = "";
-    currentParsedRows = [];
-    
-    const tbody = document.querySelector('#resultTable tbody');
-    tbody.innerHTML = `
-        <tr>
-            <td id="emptyRow" colspan="4" style="text-align: center; color: #888;">Belum ada data. Silakan tempel log dan klik Submit.</td>
-        </tr>
-    `;
+    dataTabel1 = [];
+    dataTabel2 = [];
+    document.querySelector('#table1 tbody').innerHTML = `<tr><td colspan="4" style="text-align: center; color: #888;">Belum ada data.</td></tr>`;
+    document.querySelector('#table2 tbody').innerHTML = `<tr><td colspan="5" style="text-align: center; color: #888;">Belum ada data.</td></tr>`;
 }
 </script>
 
