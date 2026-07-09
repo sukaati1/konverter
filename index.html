@@ -34,18 +34,38 @@
             font-family: monospace;
             margin-bottom: 15px;
         }
+        .btn-group {
+            margin-bottom: 15px;
+        }
         button {
-            background-color: #3498db;
-            color: white;
             border: none;
             padding: 12px 20px;
             font-size: 16px;
             border-radius: 4px;
             cursor: pointer;
             transition: background 0.3s;
+            margin-right: 5px;
         }
-        button:hover {
+        .btn-submit {
+            background-color: #3498db;
+            color: white;
+        }
+        .btn-submit:hover {
             background-color: #2980b9;
+        }
+        .btn-copy {
+            background-color: #2ecc71;
+            color: white;
+        }
+        .btn-copy:hover {
+            background-color: #27ae60;
+        }
+        .btn-reset {
+            background-color: #e74c3c;
+            color: white;
+        }
+        .btn-reset:hover {
+            background-color: #c0392b;
         }
         .table-container {
             margin-top: 25px;
@@ -77,10 +97,14 @@
     <p>Tempelkan log transaksi mentah di bawah ini:</p>
     <textarea id="rawLog" placeholder="Tempel log mentah di sini... (Salin langsung dari spreadsheet)"></textarea>
     
-    <button onclick="processData()">Submit Data</button>
+    <div class="btn-group">
+        <button class="btn-submit" onclick="processData()">Submit Data</button>
+        <button class="btn-copy" onclick="copyResult()">Salin Hasil</button>
+        <button class="btn-reset" onclick="resetAll()">Reset All</button>
+    </div>
 
     <div class="table-container">
-        <h3>Hasil Submit (Format Baru & Urutan Dibalik)</h3>
+        <h3>Hasil Submit</h3>
         <table id="resultTable">
             <thead>
                 <tr>
@@ -92,7 +116,7 @@
             </thead>
             <tbody>
                 <tr>
-                    <td colspan="4" style="text-align: center; color: #888;">Belum ada data. Silakan tempel log dan klik Submit.</td>
+                    <td id="emptyRow" colspan="4" style="text-align: center; color: #888;">Belum ada data. Silakan tempel log dan klik Submit.</td>
                 </tr>
             </tbody>
         </table>
@@ -100,6 +124,9 @@
 </div>
 
 <script>
+// Variabel global untuk menyimpan data hasil proses agar mudah disalin
+let currentParsedRows = [];
+
 function processData() {
     const rawText = document.getElementById('rawLog').value.trim();
     if (!rawText) {
@@ -107,7 +134,6 @@ function processData() {
         return;
     }
 
-    // Memecah baris log
     const lines = rawText.split('\n');
     let parsedRows = [];
 
@@ -115,18 +141,11 @@ function processData() {
         const trimmedLine = line.trim();
         if (trimmedLine === "") return;
 
-        // Memisahkan kolom berdasarkan karakter TAB (standar hasil copy dari spreadsheet)
         const columns = trimmedLine.split('\t');
 
-        // Memastikan jumlah kolom minimal sampai indeks ke-5 (Kolom F / Jumlah)
         if (columns.length >= 6) {
-            // Menggabungkan Kolom A (Tanggal) dan Kolom B (Waktu)
             const tanggalPenuh = `${columns[0].trim()} ${columns[1] ? columns[1].trim() : ""}`.trim();
-            
-            // Kolom C (UserID / Akun)
             const userText = columns[2] ? columns[2].trim() : ""; 
-
-            // Kolom F (Total Uang Masuk / Kredit)
             const jumlahText = columns[5] ? columns[5].trim() : "";
 
             parsedRows.push({
@@ -142,10 +161,9 @@ function processData() {
         return;
     }
 
-    // MEMBALIK URUTAN: Baris paling bawah di spreadsheet menjadi urutan pertama di tabel
     parsedRows.reverse();
+    currentParsedRows = parsedRows; // Simpan ke variabel global
 
-    // Merender ulang data ke dalam Tabel HTML
     const tbody = document.querySelector('#resultTable tbody');
     tbody.innerHTML = "";
 
@@ -159,6 +177,41 @@ function processData() {
         `;
         tbody.appendChild(tr);
     });
+}
+
+// FUNGSI BARU: MENYALIN DATA HASIL KONVERSI KE CLIPBOARD
+function copyResult() {
+    if (currentParsedRows.length === 0) {
+        alert('Tidak ada data hasil konversi yang bisa disalin!');
+        return;
+    }
+
+    // Membuat format teks rapi pisah kolom Tab, baris Enter (agar siap di-paste kembali)
+    let textToCopy = "No\tTanggal Terima\tUser\tJumlah\n";
+    currentParsedRows.forEach((row, index) => {
+        textToCopy += `${index + 1}\t${row.tanggal}\t${row.user}\t${row.jumlah}\n`;
+    });
+
+    navigator.clipboard.writeText(textToCopy.trim())
+        .then(() => {
+            alert('Hasil sukses disalin ke clipboard!');
+        })
+        .catch(err => {
+            alert('Gagal menyalin teks: ', err);
+        });
+}
+
+// FUNGSI BARU: RESET SEMUA INPUT DAN TABEL HASIL
+function resetAll() {
+    document.getElementById('rawLog').value = "";
+    currentParsedRows = [];
+    
+    const tbody = document.querySelector('#resultTable tbody');
+    tbody.innerHTML = `
+        <tr>
+            <td id="emptyRow" colspan="4" style="text-align: center; color: #888;">Belum ada data. Silakan tempel log dan klik Submit.</td>
+        </tr>
+    `;
 }
 </script>
 
